@@ -107,7 +107,6 @@
   .btn.danger-text{color:#ff9aa4}
   .btn:disabled{opacity:.5;cursor:not-allowed}
   .hint{margin:16px 0 0;font-size:11.5px;color:var(--muted2);text-align:center}
-  #demoBtn{border-style:dashed;color:var(--muted)}
 
   /* ---------- dashboard ---------- */
   .topbar{
@@ -182,7 +181,6 @@
   .badge.warn{color:#ffd479;background:rgba(240,180,41,.12);border-color:rgba(240,180,41,.28)}
   .badge.bad{color:#ff9aa4;background:rgba(255,95,109,.12);border-color:rgba(255,95,109,.28)}
   .badge.off{color:#a8b1c4;background:rgba(143,152,171,.12);border-color:rgba(143,152,171,.25)}
-  .badge.demo{color:#9ec1ff;background:rgba(76,141,255,.12);border-color:rgba(76,141,255,.3)}
   .rowactions{display:flex;gap:5px;flex-wrap:nowrap;white-space:nowrap}
   .rowactions .btn{padding:4px 7px;font-size:11.5px}
   .cell-actions{white-space:nowrap}
@@ -277,12 +275,6 @@
     </div>
 
     <label class="field">
-      <span>Xano API 地址</span>
-      <input id="baseInput" type="url" autocomplete="off" spellcheck="false"
-             placeholder="https://xxxx.xano.io/api:XXXXXXXX" />
-    </label>
-
-    <label class="field">
       <span>用户 ID</span>
       <input id="userIdInput" type="text" autocomplete="username"
              placeholder="例如 admin" />
@@ -295,7 +287,6 @@
     </label>
 
     <button id="loginBtn" class="btn primary block">登录</button>
-    <button id="demoBtn" class="btn block">演示模式（无需后端）</button>
 
     <p class="hint">登录凭证只在本次浏览器会话中保存，关闭页面即失效。</p>
   </div>
@@ -309,9 +300,7 @@
       <div><h1>License 管理</h1></div>
     </div>
     <div class="top-actions">
-      <span id="modeBadge" class="badge demo" hidden>演示模式</span>
       <button id="refreshBtn" class="btn ghost small">刷新</button>
-      <button id="settingsBtn" class="btn ghost small">设置</button>
       <button id="logoutBtn" class="btn ghost small danger-text">退出</button>
     </div>
   </header>
@@ -418,8 +407,7 @@
   var STORE = {
     base:   'ly_lic_base',
     userId: 'ly_lic_user_id',
-    jwt:    'ly_lic_jwt',
-    demo:   'ly_lic_demo_v2'
+    jwt:    'ly_lic_jwt'
   };
 
   /* ---------------- state ---------------- */
@@ -428,7 +416,6 @@
     jwt: '',
     userId: '',
     authStyle: {},
-    demo: false,
     items: [],
     page: 1,
     q: '',
@@ -527,8 +514,6 @@
 
   function api(path, opts) {
     opts = opts || {};
-    if (state.demo) return demoApi(path, opts);
-
     var method = (opts.method || 'GET').toUpperCase();
     /* Some Xano setups expect "Authorization: Bearer <jwt>", others accept
        the raw JWT. Try the preferred style first, fall back once per method. */
@@ -566,73 +551,11 @@
     return { items: items, total: total == null ? items.length : total };
   }
 
-  /* ---------------- demo backend ---------------- */
-  function demoSeed() {
-    var now = Date.now();
-    function iso(days) { return new Date(now + days * 86400000).toISOString(); }
-    return [
-      { id: 1, ecid: '0013289A22C20026', status: 'active', expires_at: iso(240),
-        remaining: 5, note: 'MacBookPro15,2 测试机', created_at: iso(-30) },
-      { id: 2, ecid: '000D683226EB8026', status: 'active', expires_at: iso(6),
-        remaining: 1, note: '客户 A · 待激活', created_at: iso(-10) },
-      { id: 3, ecid: '001A2B3C4D5E6F70', status: 'disabled', expires_at: iso(120),
-        remaining: 2, note: '已退款', created_at: iso(-60) },
-      { id: 4, ecid: '0022334455667788', status: 'active', expires_at: iso(-3),
-        remaining: 0, note: '已过期示例', created_at: iso(-400) },
-      { id: 5, ecid: '0099887766554433', status: 'active', expires_at: iso(45),
-        remaining: 0, note: '次数用尽示例', created_at: iso(-90) }
-    ];
-  }
-  function demoLoad() {
-    try {
-      var raw = localStorage.getItem(STORE.demo);
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    var rows = demoSeed();
-    demoStore(rows);
-    return rows;
-  }
-  function demoStore(rows) {
-    try { localStorage.setItem(STORE.demo, JSON.stringify(rows)); } catch (e) {}
-  }
-  function demoApi(path, opts) {
-    var method = opts.method || 'GET';
-    var rows = demoLoad();
-    if (method === 'GET') return Promise.resolve({ items: rows });
-
-    if (method === 'POST') {
-      var row = Object.assign({}, opts.body);
-      row.id = rows.reduce(function (m, r) { return Math.max(m, Number(r.id) || 0); }, 0) + 1;
-      row.created_at = new Date().toISOString();
-      rows.unshift(row);
-      demoStore(rows);
-      return Promise.resolve(row);
-    }
-
-    var m = path.match(/\/admin\/licenses\/([^/]+)$/);
-    var id = m ? decodeURIComponent(m[1]) : null;
-    var idx = rows.findIndex(function (r) { return String(r.id) === String(id); });
-
-    if (method === 'PATCH') {
-      if (idx < 0) return Promise.reject(new Error('记录不存在'));
-      rows[idx] = Object.assign({}, rows[idx], opts.body);
-      demoStore(rows);
-      return Promise.resolve(rows[idx]);
-    }
-    if (method === 'DELETE') {
-      if (idx >= 0) rows.splice(idx, 1);
-      demoStore(rows);
-      return Promise.resolve({ ok: true });
-    }
-    return Promise.reject(new Error('不支持的请求'));
-  }
-
   /* ---------------- auth / views ---------------- */
   function showLogin(prefill) {
     $('#dashView').hidden = true;
     $('#loginView').hidden = false;
     if (prefill) {
-      $('#baseInput').value = state.base || DEFAULT_BASE;
       $('#userIdInput').value = state.userId || '';
       $('#passwordInput').value = '';
     }
@@ -643,7 +566,6 @@
   function showDash() {
     $('#loginView').hidden = true;
     $('#dashView').hidden = false;
-    $('#modeBadge').hidden = !state.demo;
     $('#refreshBtn').disabled = false;
     load();
   }
@@ -665,21 +587,18 @@
   }
 
   function login() {
-    var base = $('#baseInput').value.trim();
     var userId = $('#userIdInput').value.trim();
     var password = $('#passwordInput').value;
 
-    if (!/^https?:\/\//i.test(base)) { toast('API 地址需要以 http(s):// 开头', 'bad'); return; }
     if (!userId || !password) { toast('请输入用户 ID 和密码', 'bad'); return; }
 
-    state.base = base;
-    state.demo = false;
+    if (!/^https?:\/\//i.test(state.base || '')) state.base = DEFAULT_BASE;
 
     var btn = $('#loginBtn');
     btn.disabled = true;
     btn.textContent = '登录中…';
 
-    fetch(base.replace(/\/+$/, '') + API.login, {
+    fetch(state.base.replace(/\/+$/, '') + API.login, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: userId, password: password })
@@ -707,15 +626,6 @@
       btn.disabled = false;
       btn.textContent = '登录';
     });
-  }
-
-  function startDemo() {
-    state.demo = true;
-    state.jwt = '';
-    state.base = $('#baseInput').value.trim() || DEFAULT_BASE;
-    state.items = demoLoad();
-    showDash();
-    toast('演示模式：数据保存在本机浏览器', 'ok');
   }
 
   /* ---------------- data ---------------- */
@@ -960,18 +870,11 @@
 
   /* ---------------- events ---------------- */
   on($('#loginBtn'), 'click', login);
-  on($('#demoBtn'), 'click', startDemo);
   on($('#passwordInput'), 'keydown', function (e) { if (e.key === 'Enter') login(); });
   on($('#userIdInput'), 'keydown', function (e) { if (e.key === 'Enter') $('#passwordInput').focus(); });
-  on($('#baseInput'), 'keydown', function (e) { if (e.key === 'Enter') $('#userIdInput').focus(); });
 
   on($('#refreshBtn'), 'click', load);
   on($('#logoutBtn'), 'click', function () { logout(); });
-  on($('#settingsBtn'), 'click', function () {
-    state.jwt = '';
-    try { sessionStorage.removeItem(STORE.jwt); } catch (e) {}
-    showLogin(true);
-  });
 
   on($('#createBtn'), 'click', openCreate);
   on($('#modalClose'), 'click', closeModal);
@@ -1013,13 +916,6 @@
 
   /* ---------------- init ---------------- */
   function init() {
-    // ?demo=1 for preview
-    if (/[?&]demo=1\b/.test(location.search)) {
-      $('#baseInput').value = DEFAULT_BASE;
-      startDemo();
-      return;
-    }
-
     var base = '';
     var userId = '';
     var jwt = '';
@@ -1030,8 +926,8 @@
     } catch (e) {}
 
     state.base = base || DEFAULT_BASE;
+    if (!/^https?:\/\//i.test(state.base)) state.base = DEFAULT_BASE;
     state.userId = userId;
-    $('#baseInput').value = state.base;
     $('#userIdInput').value = userId;
 
     if (jwt) {
