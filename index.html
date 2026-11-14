@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex,nofollow" />
+<meta name="color-scheme" content="dark" />
+<title>LY License 管理</title>
+<style>
+  :root{
+    --bg:#0e1014;
+    --bg2:#12151b;
+    --panel:#171b23;
+    --panel2:#1c212b;
+    --border:#262c38;
+    --border2:#313949;
+    --text:#e8ebf2;
+    --muted:#8f98ab;
+    --muted2:#6b7488;
+    --accent:#4c8dff;
+    --accent2:#3a79e8;
+    --ok:#33c98b;
+    --warn:#f0b429;
+    --bad:#ff5f6d;
+    --radius:14px;
+    --shadow:0 18px 50px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 700px at 15% -10%, rgba(76,141,255,.12), transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, rgba(51,201,139,.07), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  button,input,select,textarea{font:inherit;color:inherit}
+  [hidden]{display:none!important}
+  .muted{color:var(--muted)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  /* ---------- login ---------- */
+  .login{
+    min-height:100%;
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .login-card{
+    width:100%;max-width:430px;
+    background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0)) , var(--panel);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:28px;
+    box-shadow:var(--shadow);
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand.small{gap:10px}
+  .logo{
+    width:46px;height:46px;border-radius:12px;
+    display:grid;place-items:center;
+    background:linear-gradient(145deg,#4c8dff,#2f63c8);
+    color:#fff;font-weight:800;letter-spacing:.5px;
+    box-shadow:0 8px 22px rgba(76,141,255,.35);
+    flex:0 0 auto;
+  }
+  .brand.small .logo{width:34px;height:34px;border-radius:9px;font-size:12px}
+  .brand h1{margin:0;font-size:19px;letter-spacing:.2px}
+  .brand p{margin:2px 0 0;font-size:12.5px}
+  .field{display:block;margin-top:18px}
+  .field > span{display:block;margin-bottom:7px;font-size:12.5px;color:var(--muted)}
+  .field input,.field select,.field textarea{
+    width:100%;padding:11px 12px;
+    background:var(--bg2);
+    border:1px solid var(--border2);
+    border-radius:10px;
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(76,141,255,.15);
+  }
+  .check{display:flex;align-items:center;gap:8px;margin-top:14px;color:var(--muted);font-size:12.5px}
+  .check input{accent-color:var(--accent)}
+  .btn{
+    appearance:none;border:1px solid var(--border2);
+    background:var(--panel2);
+    padding:9px 14px;border-radius:10px;
+    cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  .btn:hover{border-color:#3d465a;background:#222836}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{
+    background:linear-gradient(180deg,var(--accent),var(--accent2));
+    border-color:transparent;color:#fff;font-weight:600;
+    box-shadow:0 6px 18px rgba(76,141,255,.28);
+  }
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent}
+  .btn.block{width:100%;margin-top:18px;padding:11px}
+  .btn.small{padding:5px 9px;border-radius:8px;font-size:12px}
+  .btn.danger{color:#ffb3b9;border-color:#4a2a31;background:#2a171c}
+  .btn.danger:hover{background:#341b21;border-color:#63323c}
+  .btn.danger-text{color:#ff9aa4}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .hint{margin:16px 0 0;font-size:11.5px;color:var(--muted2);text-align:center}
+  #demoBtn{border-style:dashed;color:var(--muted)}
+
+  /* ---------- dashboard ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:12px 20px;
+    background:rgba(14,16,20,.78);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
+  }
+  .top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  main{max-width:1200px;margin:0 auto;padding:20px}
+
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:12px;margin-bottom:16px;
+  }
+  .stat{
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);padding:14px 16px;
+  }
+  .stat .k{font-size:12px;color:var(--muted)}
+  .stat .v{font-size:24px;font-weight:700;margin-top:4px;letter-spacing:.3px}
+  .stat .v small{font-size:12px;font-weight:500;color:var(--muted);margin-left:6px}
+
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .search{
+    flex:1 1 240px;min-width:180px;
+    padding:10px 12px;border-radius:10px;
+    background:var(--panel);border:1px solid var(--border2);outline:none;
+  }
+  .search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(76,141,255,.15)}
+  .select{
+    padding:10px 12px;border-radius:10px;
+    background:var(--panel);border:1px solid var(--border2);outline:none;
+  }
+
+  .panel{
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);overflow:hidden;
+  }
+  .table{width:100%;border-collapse:collapse}
+  .table th{
+    text-align:left;font-size:11.5px;font-weight:600;letter-spacing:.4px;
+    color:var(--muted);text-transform:uppercase;
+    padding:12px 14px;border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.02);
+    white-space:nowrap;
+  }
+  .table td{padding:13px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .table tr:last-child td{border-bottom:none}
+  .table tbody tr:hover{background:rgba(255,255,255,.025)}
+  .keycell{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+  .keycell code{
+    flex:1 1 auto;min-width:0;
+    font-size:12px;color:#cdd6e6;background:var(--bg2);
+    border:1px solid var(--border);border-radius:7px;
+    padding:3px 7px;letter-spacing:.3px;
+    overflow-wrap:anywhere;
+  }
+  .copy{flex:0 0 auto;white-space:nowrap;background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 4px;border-radius:6px;font-size:12px}
+  .copy:hover{color:var(--text);background:rgba(255,255,255,.06)}
+  .ecid{font-size:12px;color:#b9c3d6}
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;
+    border:1px solid transparent;white-space:nowrap;
+  }
+  .badge.ok{color:#7ff0c0;background:rgba(51,201,139,.12);border-color:rgba(51,201,139,.28)}
+  .badge.warn{color:#ffd479;background:rgba(240,180,41,.12);border-color:rgba(240,180,41,.28)}
+  .badge.bad{color:#ff9aa4;background:rgba(255,95,109,.12);border-color:rgba(255,95,109,.28)}
+  .badge.off{color:#a8b1c4;background:rgba(143,152,171,.12);border-color:rgba(143,152,171,.25)}
+  .badge.demo{color:#9ec1ff;background:rgba(76,141,255,.12);border-color:rgba(76,141,255,.3)}
+  .rowactions{display:flex;gap:5px;flex-wrap:nowrap;white-space:nowrap}
+  .rowactions .btn{padding:4px 7px;font-size:11.5px}
+  .cell-actions{white-space:nowrap}
+  .note{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+  .empty{padding:48px 20px;text-align:center;color:var(--muted)}
+  .empty b{display:block;color:var(--text);margin-bottom:6px;font-size:15px}
+  .pager{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 0 4px;color:var(--muted)}
+  .pager button{min-width:38px}
+
+  /* ---------- modal ---------- */
+  .modal{
+    position:fixed;inset:0;z-index:50;
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;background:rgba(4,6,10,.66);
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  }
+  .modal-card{
+    width:100%;max-width:480px;max-height:90vh;overflow:auto;
+    background:var(--panel);border:1px solid var(--border2);
+    border-radius:18px;padding:22px;box-shadow:var(--shadow);
+  }
+  .modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+  .modal-head h2{margin:0;font-size:17px}
+  .form .field{margin-top:14px}
+  .form .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .created{margin-top:6px}
+  .created p{color:var(--muted);margin:0 0 10px}
+  .keyrow{display:flex;gap:8px;align-items:center;margin-bottom:16px}
+  .keyrow code{
+    flex:1;padding:10px 12px;border-radius:10px;
+    background:var(--bg2);border:1px dashed var(--border2);
+    font-size:12.5px;word-break:break-all;letter-spacing:.4px;
+  }
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+    z-index:80;max-width:min(90vw,520px);
+    padding:10px 16px;border-radius:999px;
+    background:#232a37;border:1px solid var(--border2);
+    box-shadow:0 12px 30px rgba(0,0,0,.4);
+    font-size:13px;text-align:center;
+  }
+  .toast.ok{border-color:rgba(51,201,139,.4)}
+  .toast.bad{border-color:rgba(255,95,109,.4)}
+
+  /* ---------- mobile ---------- */
+  @media (max-width: 780px){
+    .topbar{padding:10px 14px}
+    .brand.small h1{font-size:15px}
+    main{padding:14px}
+    .stats{grid-template-columns:1fr 1fr}
+    .stat{padding:12px}
+    .stat .v{font-size:20px}
+    .table thead{display:none}
+    .table,.table tbody,.table tr,.table td{display:block;width:100%}
+    .table tr{
+      border-bottom:1px solid var(--border);
+      padding:10px 12px;
+    }
+    .table tr:last-child{border-bottom:none}
+    .table td{
+      border:none;padding:5px 0;
+      display:flex;gap:12px;align-items:center;justify-content:space-between;
+    }
+    .table td::before{
+      content:attr(data-label);
+      color:var(--muted2);font-size:11.5px;letter-spacing:.3px;
+      flex:0 0 auto;
+    }
+    .table td.cell-key::before,.table td.cell-actions::before{display:none}
+    .table td.cell-key{padding-bottom:8px}
+    .table td.cell-actions{justify-content:flex-start;padding-top:6px}
+    .note{max-width:60vw}
+    .form .row{grid-template-columns:1fr}
+    .modal{padding:12px}
+    .modal-card{padding:18px;border-radius:16px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================= login ======================= -->
+<section id="loginView" class="login">
+  <div class="login-card">
+    <div class="brand">
+      <div class="logo">LY</div>
+      <div>
+        <h1>License 管理</h1>
+        <p class="muted">LYT2Premium · 授权管理后台</p>
+      </div>
+    </div>
+
+    <label class="field">
+      <span>Xano API 地址</span>
+      <input id="baseInput" type="url" autocomplete="off" spellcheck="false"
+             placeholder="https://xxxx.xano.io/api:XXXXXXXX" />
+    </label>
+
+    <label class="field">
+      <span>用户 ID</span>
+      <input id="userIdInput" type="text" autocomplete="username"
+             placeholder="例如 admin" />
+    </label>
+
+    <label class="field">
+      <span>密码</span>
+      <input id="passwordInput" type="password" autocomplete="current-password"
+             placeholder="登录密码" />
+    </label>
+
+    <button id="loginBtn" class="btn primary block">登录</button>
+    <button id="demoBtn" class="btn block">演示模式（无需后端）</button>
+
+    <p class="hint">登录凭证只在本次浏览器会话中保存，关闭页面即失效。</p>
+  </div>
+</section>
+
+<!-- ======================= dashboard ======================= -->
+<section id="dashView" hidden>
+  <header class="topbar">
+    <div class="brand small">
+      <div class="logo">LY</div>
+      <div><h1>License 管理</h1></div>
+    </div>
+    <div class="top-actions">
+      <span id="modeBadge" class="badge demo" hidden>演示模式</span>
+      <button id="refreshBtn" class="btn ghost small">刷新</button>
+      <button id="settingsBtn" class="btn ghost small">设置</button>
+      <button id="logoutBtn" class="btn ghost small danger-text">退出</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="stats" class="stats"></div>
+
+    <div class="toolbar">
+      <input id="searchInput" class="search" type="search"
+             placeholder="搜索 ECID / 备注" />
+      <select id="statusFilter" class="select">
+        <option value="">全部状态</option>
+        <option value="active">有效</option>
+        <option value="soon">7 天内到期</option>
+        <option value="usedup">次数用尽</option>
+        <option value="expired">已过期</option>
+        <option value="disabled">已禁用</option>
+      </select>
+      <button id="createBtn" class="btn primary">＋ 新建 License</button>
+    </div>
+
+    <div class="panel">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>状态</th>
+            <th>ECID</th>
+            <th>到期</th>
+            <th>剩余次数</th>
+            <th>备注</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+      <div id="empty" class="empty" hidden>
+        <b>还没有 License</b>
+        点右上角「新建 License」生成第一个授权。
+      </div>
+    </div>
+
+    <div id="pager" class="pager"></div>
+  </main>
+</section>
+
+<!-- ======================= create modal ======================= -->
+<div id="modal" class="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="modalTitle">新建 License</h2>
+      <button id="modalClose" class="btn ghost small" aria-label="关闭">✕</button>
+    </div>
+
+    <form id="createForm" class="form">
+      <label class="field">
+        <span>ECID</span>
+        <input id="ecidInput" class="mono" autocomplete="off" spellcheck="false"
+               placeholder="例如 0013289A22C20026" />
+      </label>
+
+      <div class="row">
+        <label class="field">
+          <span>有效期（天）</span>
+          <input id="daysInput" type="number" min="1" max="3650" value="1" />
+        </label>
+        <label class="field">
+          <span>剩余次数</span>
+          <input id="remainingInput" type="number" min="1" max="9999" value="5" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span>备注（可选）</span>
+        <input id="noteInput" autocomplete="off" placeholder="客户 / 机器型号 / 订单号" />
+      </label>
+
+      <button id="createSubmit" class="btn primary block" type="submit">生成 License</button>
+    </form>
+
+    <div id="createdBox" class="created" hidden>
+      <p>授权已生成：</p>
+      <div id="createdMeta" class="muted" style="font-size:12.5px;margin:0 0 16px;line-height:1.7"></div>
+      <button id="doneBtn" class="btn primary block" type="button">完成</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------------- config ---------------- */
+  var DEFAULT_BASE = 'https://x8ki-letl-twmt.n7.xano.io/api:XZIOOQXO';
+  var API = {
+    login:  '/admin/login',
+    list:   '/admin/t2_ecid?page=1&per_page=500',
+    create: '/admin/t2_ecid',
+    update: function (id) { return '/admin/t2_ecid/' + encodeURIComponent(id); },
+    remove: function (id) { return '/admin/t2_ecid/' + encodeURIComponent(id); }
+  };
+  var PAGE_SIZE = 20;
+  var STORE = {
+    base:   'ly_lic_base',
+    userId: 'ly_lic_user_id',
+    jwt:    'ly_lic_jwt',
+    demo:   'ly_lic_demo_v2'
+  };
+
+  /* ---------------- state ---------------- */
+  var state = {
+    base: '',
+    jwt: '',
+    userId: '',
+    authStyle: {},
+    demo: false,
+    items: [],
+    page: 1,
+    q: '',
+    filter: '',
+    loading: false
+  };
+
+  /* ---------------- helpers ---------------- */
+  function $(sel) { return document.querySelector(sel); }
+  function on(el, ev, fn) { if (el) el.addEventListener(ev, fn); }
+
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c];
+    });
+  }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function toDate(v) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') return new Date(v < 1e12 ? v * 1000 : v);
+    var d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function daysLeft(d) {
+    if (!d) return null;
+    return Math.ceil((d.getTime() - Date.now()) / 86400000);
+  }
+  function remainingOf(row) {
+    if (row.remaining != null) return Math.max(0, Number(row.remaining) || 0);
+    var max = Number(row.max_activations || 0);
+    var used = Number(row.activations_used || 0);
+    if (!max) return 0;
+    return Math.max(0, max - used);
+  }
+  function rowStatus(row) {
+    var d = toDate(row.expires_at);
+    var raw = String(row.status || 'active').toLowerCase();
+    if (raw !== 'active') return { key:'disabled', label:'已禁用' };
+    if (d && d.getTime() < Date.now()) return { key:'expired', label:'已过期' };
+    if (remainingOf(row) <= 0) return { key:'usedup', label:'次数用尽' };
+    var dl = daysLeft(d);
+    if (dl !== null && dl <= 7) return { key:'soon', label: dl <= 0 ? '今天到期' : dl + ' 天后到期' };
+    return { key:'active', label:'有效' };
+  }
+  function toast(msg, kind) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.className = 'toast' + (kind ? ' ' + kind : '');
+    t.hidden = false;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(function () { t.hidden = true; }, 2800);
+  }
+  function copyText(text) {
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).catch(fallback);
+    } else {
+      fallback();
+    }
+    toast('已复制', 'ok');
+  }
+
+  /* ---------------- api ---------------- */
+  function baseUrl() {
+    return state.base.replace(/\/+$/, '');
+  }
+
+  function send(path, opts, rawAuth) {
+    var headers = { 'Content-Type': 'application/json' };
+    if (state.jwt) headers['Authorization'] = (rawAuth ? '' : 'Bearer ') + state.jwt;
+    return fetch(baseUrl() + path, {
+      method: opts.method || 'GET',
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+        return { status: res.status, ok: res.ok, data: data };
+      });
+    });
+  }
+
+  function api(path, opts) {
+    opts = opts || {};
+    if (state.demo) return demoApi(path, opts);
+
+    var method = (opts.method || 'GET').toUpperCase();
+    /* Some Xano setups expect "Authorization: Bearer <jwt>", others accept
+       the raw JWT. Try the preferred style first, fall back once per method. */
+    var preferredRaw = state.authStyle[method] === 'raw';
+
+    function finish(r) {
+      if (r.status === 401 || r.status === 403) {
+        logout();
+        throw new Error('登录已过期，请重新登录');
+      }
+      if (!r.ok) {
+        var msg = r.data && (r.data.message || r.data.error)
+          ? (r.data.message || r.data.error)
+          : ('HTTP ' + r.status);
+        throw new Error(msg);
+      }
+      return r.data;
+    }
+
+    return send(path, opts, preferredRaw).then(function (r) {
+      if ((r.status === 401 || r.status === 403) && state.jwt) {
+        return send(path, opts, !preferredRaw).then(function (r2) {
+          if (r2.ok) state.authStyle[method] = preferredRaw ? 'bearer' : 'raw';
+          return finish(r2);
+        });
+      }
+      return finish(r);
+    });
+  }
+
+  function normalizeList(data) {
+    var items = Array.isArray(data) ? data
+      : (data && (data.items || data.records || data.rows)) || [];
+    var total = (data && !Array.isArray(data) && (data.total != null ? data.total : null));
+    return { items: items, total: total == null ? items.length : total };
+  }
+
+  /* ---------------- demo backend ---------------- */
+  function demoSeed() {
+    var now = Date.now();
+    function iso(days) { return new Date(now + days * 86400000).toISOString(); }
+    return [
+      { id: 1, ecid: '0013289A22C20026', status: 'active', expires_at: iso(240),
+        remaining: 5, note: 'MacBookPro15,2 测试机', created_at: iso(-30) },
+      { id: 2, ecid: '000D683226EB8026', status: 'active', expires_at: iso(6),
+        remaining: 1, note: '客户 A · 待激活', created_at: iso(-10) },
+      { id: 3, ecid: '001A2B3C4D5E6F70', status: 'disabled', expires_at: iso(120),
+        remaining: 2, note: '已退款', created_at: iso(-60) },
+      { id: 4, ecid: '0022334455667788', status: 'active', expires_at: iso(-3),
+        remaining: 0, note: '已过期示例', created_at: iso(-400) },
+      { id: 5, ecid: '0099887766554433', status: 'active', expires_at: iso(45),
+        remaining: 0, note: '次数用尽示例', created_at: iso(-90) }
+    ];
+  }
+  function demoLoad() {
+    try {
+      var raw = localStorage.getItem(STORE.demo);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    var rows = demoSeed();
+    demoStore(rows);
+    return rows;
+  }
+  function demoStore(rows) {
+    try { localStorage.setItem(STORE.demo, JSON.stringify(rows)); } catch (e) {}
+  }
+  function demoApi(path, opts) {
+    var method = opts.method || 'GET';
+    var rows = demoLoad();
+    if (method === 'GET') return Promise.resolve({ items: rows });
+
+    if (method === 'POST') {
+      var row = Object.assign({}, opts.body);
+      row.id = rows.reduce(function (m, r) { return Math.max(m, Number(r.id) || 0); }, 0) + 1;
+      row.created_at = new Date().toISOString();
+      rows.unshift(row);
+      demoStore(rows);
+      return Promise.resolve(row);
+    }
+
+    var m = path.match(/\/admin\/licenses\/([^/]+)$/);
+    var id = m ? decodeURIComponent(m[1]) : null;
+    var idx = rows.findIndex(function (r) { return String(r.id) === String(id); });
+
+    if (method === 'PATCH') {
+      if (idx < 0) return Promise.reject(new Error('记录不存在'));
+      rows[idx] = Object.assign({}, rows[idx], opts.body);
+      demoStore(rows);
+      return Promise.resolve(rows[idx]);
+    }
+    if (method === 'DELETE') {
+      if (idx >= 0) rows.splice(idx, 1);
+      demoStore(rows);
+      return Promise.resolve({ ok: true });
+    }
+    return Promise.reject(new Error('不支持的请求'));
+  }
+
+  /* ---------------- auth / views ---------------- */
+  function showLogin(prefill) {
+    $('#dashView').hidden = true;
+    $('#loginView').hidden = false;
+    if (prefill) {
+      $('#baseInput').value = state.base || DEFAULT_BASE;
+      $('#userIdInput').value = state.userId || '';
+      $('#passwordInput').value = '';
+    }
+    if ($('#userIdInput').value) $('#passwordInput').focus();
+    else $('#userIdInput').focus();
+  }
+
+  function showDash() {
+    $('#loginView').hidden = true;
+    $('#dashView').hidden = false;
+    $('#modeBadge').hidden = !state.demo;
+    $('#refreshBtn').disabled = false;
+    load();
+  }
+
+  function saveLoginState() {
+    try {
+      localStorage.setItem(STORE.base, state.base);
+      localStorage.setItem(STORE.userId, state.userId);
+      sessionStorage.setItem(STORE.jwt, state.jwt);
+    } catch (e) {}
+  }
+
+  function logout() {
+    state.jwt = '';
+    state.authStyle = {};
+    state.items = [];
+    try { sessionStorage.removeItem(STORE.jwt); } catch (e) {}
+    showLogin(true);
+  }
+
+  function login() {
+    var base = $('#baseInput').value.trim();
+    var userId = $('#userIdInput').value.trim();
+    var password = $('#passwordInput').value;
+
+    if (!/^https?:\/\//i.test(base)) { toast('API 地址需要以 http(s):// 开头', 'bad'); return; }
+    if (!userId || !password) { toast('请输入用户 ID 和密码', 'bad'); return; }
+
+    state.base = base;
+    state.demo = false;
+
+    var btn = $('#loginBtn');
+    btn.disabled = true;
+    btn.textContent = '登录中…';
+
+    fetch(base.replace(/\/+$/, '') + API.login, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: userId, password: password })
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var data = null;
+        try { data = text ? JSON.parse(text) : null; } catch (e) {}
+        var token = data && (data.authToken || data.token || data.jwt || data.access_token);
+        if (!res.ok || !token) {
+          throw new Error('用户 ID 或密码错误');
+        }
+        return { token: token, data: data };
+      });
+    }).then(function (result) {
+      state.jwt = result.token;
+      state.authStyle = {};
+      state.userId = userId;
+      saveLoginState();
+      showDash();
+      toast('登录成功', 'ok');
+    }).catch(function (err) {
+      state.jwt = '';
+      toast(err.message || '登录失败', 'bad');
+    }).then(function () {
+      btn.disabled = false;
+      btn.textContent = '登录';
+    });
+  }
+
+  function startDemo() {
+    state.demo = true;
+    state.jwt = '';
+    state.base = $('#baseInput').value.trim() || DEFAULT_BASE;
+    state.items = demoLoad();
+    showDash();
+    toast('演示模式：数据保存在本机浏览器', 'ok');
+  }
+
+  /* ---------------- data ---------------- */
+  function load() {
+    if (state.loading) return;
+    state.loading = true;
+    $('#refreshBtn').disabled = true;
+
+    api(API.list).then(function (data) {
+      state.items = normalizeList(data).items;
+      state.page = 1;
+      render();
+    }).catch(function (err) {
+      toast(err.message || '加载失败', 'bad');
+    }).then(function () {
+      state.loading = false;
+      $('#refreshBtn').disabled = false;
+    });
+  }
+
+  function filtered() {
+    var q = state.q.trim().toLowerCase();
+    var f = state.filter;
+    return state.items.filter(function (r) {
+      var st = rowStatus(r);
+      if (f === 'active' && st.key !== 'active') return false;
+      if (f === 'soon' && st.key !== 'soon') return false;
+      if (f === 'usedup' && st.key !== 'usedup') return false;
+      if (f === 'expired' && st.key !== 'expired') return false;
+      if (f === 'disabled' && st.key !== 'disabled') return false;
+      if (!q) return true;
+      return [r.ecid, r.note].some(function (v) {
+        return String(v == null ? '' : v).toLowerCase().indexOf(q) >= 0;
+      });
+    });
+  }
+
+  function statsHTML(rows) {
+    var total = rows.length, active = 0, soon = 0, bad = 0, remain = 0;
+    rows.forEach(function (r) {
+      var k = rowStatus(r).key;
+      if (k === 'active') active++;
+      else if (k === 'soon') { active++; soon++; }
+      else if (k === 'expired' || k === 'disabled') bad++;
+      remain += remainingOf(r);
+    });
+    return [
+      '<div class="stat"><div class="k">总数</div><div class="v">' + total + '</div></div>',
+      '<div class="stat"><div class="k">有效</div><div class="v">' + active + '</div></div>',
+      '<div class="stat"><div class="k">剩余次数合计</div><div class="v">' + remain + '<small>次</small></div></div>',
+      '<div class="stat"><div class="k">7 天内到期</div><div class="v">' + soon + '<small>需跟进</small></div></div>',
+      '<div class="stat"><div class="k">已过期 / 禁用</div><div class="v">' + bad + '</div></div>'
+    ].join('');
+  }
+
+  function rowHTML(r) {
+    var st = rowStatus(r);
+    var badgeClass = st.key === 'active' ? 'ok'
+      : st.key === 'soon' ? 'warn'
+      : st.key === 'usedup' ? 'warn'
+      : st.key === 'expired' ? 'bad' : 'off';
+    var d = toDate(r.expires_at);
+    var dl = daysLeft(d);
+    var expiry = fmtDate(d) + (dl != null ? ' <span class="muted">(' + (dl >= 0 ? dl + ' 天' : '已过期') + ')</span>' : '');
+    var remain = remainingOf(r);
+    var disabled = st.key === 'disabled';
+
+    return '<tr>' +
+      '<td data-label="状态"><span class="badge ' + badgeClass + '">' + esc(st.label) + '</span></td>' +
+      '<td class="cell-key" data-label="ECID">' +
+        '<div class="keycell"><code class="mono">' + esc(r.ecid || '—') + '</code>' +
+        (r.ecid ? '<button class="copy" data-copy="' + esc(r.ecid) + '" title="复制">复制</button>' : '') +
+        '</div></td>' +
+      '<td data-label="到期">' + expiry + '</td>' +
+      '<td data-label="剩余次数">' + remain + ' <span class="muted">次</span></td>' +
+      '<td data-label="备注"><div class="note" title="' + esc(r.note || '') + '">' + esc(r.note || '—') + '</div></td>' +
+      '<td class="cell-actions" data-label="操作"><div class="rowactions">' +
+        '<button class="btn small" data-act="count" data-id="' + esc(r.id) + '">次数</button>' +
+        '<button class="btn small" data-act="extend" data-id="' + esc(r.id) + '">延期</button>' +
+        '<button class="btn small" data-act="toggle" data-id="' + esc(r.id) + '">' + (disabled ? '启用' : '禁用') + '</button>' +
+        '<button class="btn small" data-act="note" data-id="' + esc(r.id) + '">备注</button>' +
+        '<button class="btn small danger" data-act="delete" data-id="' + esc(r.id) + '">删除</button>' +
+      '</div></td>' +
+    '</tr>';
+  }
+
+  function render() {
+    var rows = filtered();
+    $('#stats').innerHTML = statsHTML(state.items);
+
+    var pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if (state.page > pages) state.page = pages;
+    var start = (state.page - 1) * PAGE_SIZE;
+    var pageRows = rows.slice(start, start + PAGE_SIZE);
+
+    $('#listBody').innerHTML = pageRows.map(rowHTML).join('');
+    $('#empty').hidden = rows.length !== 0;
+
+    var pager = $('#pager');
+    if (rows.length <= PAGE_SIZE) {
+      pager.innerHTML = rows.length ? '<span class="muted">共 ' + rows.length + ' 条</span>' : '';
+    } else {
+      pager.innerHTML =
+        '<button class="btn small" data-page="prev"' + (state.page <= 1 ? ' disabled' : '') + '>上一页</button>' +
+        '<span class="muted">' + state.page + ' / ' + pages + '　共 ' + rows.length + ' 条</span>' +
+        '<button class="btn small" data-page="next"' + (state.page >= pages ? ' disabled' : '') + '>下一页</button>';
+    }
+  }
+
+  /* ---------------- row actions ---------------- */
+  function findRow(id) {
+    return state.items.filter(function (r) { return String(r.id) === String(id); })[0];
+  }
+
+  function patchRow(id, body) {
+    return api(API.update(id), { method: 'PATCH', body: body }).then(function (updated) {
+      var row = findRow(id);
+      if (row && updated && typeof updated === 'object') Object.assign(row, updated);
+      else if (row) Object.assign(row, body);
+      render();
+    });
+  }
+
+  function handleAction(act, id) {
+    var row = findRow(id);
+    if (!row) return;
+
+    if (act === 'toggle') {
+      var next = rowStatus(row).key === 'disabled' ? 'active' : 'inactive';
+      patchRow(id, { status: next }).then(function () {
+        toast(next === 'active' ? '已启用' : '已禁用', 'ok');
+      }).catch(function (e) { toast(e.message, 'bad'); });
+      return;
+    }
+
+    if (act === 'count') {
+      var cur = remainingOf(row);
+      var input = prompt('设置剩余次数（当前 ' + cur + '）', String(cur));
+      if (input == null) return;
+      var n = parseInt(input, 10);
+      if (!(n >= 0 && n <= 99999)) { toast('次数无效', 'bad'); return; }
+      patchRow(id, { remaining: n }).then(function () { toast('剩余次数已更新为 ' + n, 'ok'); })
+        .catch(function (e) { toast(e.message, 'bad'); });
+      return;
+    }
+
+    if (act === 'extend') {
+      var input = prompt('延长多少天？（可输入 30 / 90 / 365）', '30');
+      if (input == null) return;
+      var days = parseInt(input, 10);
+      if (!(days > 0)) { toast('天数无效', 'bad'); return; }
+      var cur = toDate(row.expires_at);
+      var base = cur && cur.getTime() > Date.now() ? cur : new Date();
+      var nextDate = new Date(base.getTime() + days * 86400000);
+      patchRow(id, { expires_at: nextDate.toISOString() }).then(function () {
+        toast('已延长到 ' + fmtDate(nextDate), 'ok');
+      }).catch(function (e) { toast(e.message, 'bad'); });
+      return;
+    }
+
+    if (act === 'note') {
+      var note = prompt('备注', row.note || '');
+      if (note == null) return;
+      patchRow(id, { note: note }).then(function () { toast('备注已更新', 'ok'); })
+        .catch(function (e) { toast(e.message, 'bad'); });
+      return;
+    }
+
+    if (act === 'delete') {
+      if (!confirm('确定删除这条授权？\nECID: ' + (row.ecid || '') + '\n删除后客户端将无法通过校验。')) return;
+      api(API.remove(id), { method: 'DELETE' }).then(function () {
+        state.items = state.items.filter(function (r) { return String(r.id) !== String(id); });
+        render();
+        toast('已删除', 'ok');
+      }).catch(function (e) { toast(e.message, 'bad'); });
+    }
+  }
+
+  /* ---------------- create ---------------- */
+  function openCreate() {
+    $('#createForm').hidden = false;
+    $('#createdBox').hidden = true;
+    $('#modalTitle').textContent = '新建 License';
+    $('#ecidInput').value = '';
+    $('#daysInput').value = '1';
+    $('#remainingInput').value = '5';
+    $('#noteInput').value = '';
+    $('#modal').hidden = false;
+    setTimeout(function () { $('#ecidInput').focus(); }, 30);
+  }
+
+  function closeModal() {
+    $('#modal').hidden = true;
+  }
+
+  function submitCreate(e) {
+    e.preventDefault();
+
+    var ecid = $('#ecidInput').value.trim().toUpperCase().replace(/\s+/g, '');
+    var days = parseInt($('#daysInput').value, 10);
+    var remaining = parseInt($('#remainingInput').value, 10);
+    var note = $('#noteInput').value.trim();
+
+    if (!/^[0-9A-Za-z_-]{4,64}$/.test(ecid)) {
+      toast('ECID 只能包含字母、数字、下划线、短横线（4–64 位）', 'bad');
+      return;
+    }
+    if (!(days >= 1 && days <= 3650)) { toast('有效期需在 1–3650 天之间', 'bad'); return; }
+    if (!(remaining >= 1 && remaining <= 9999)) { toast('剩余次数需在 1–9999 之间', 'bad'); return; }
+
+    var expires = new Date(Date.now() + days * 86400000).toISOString();
+    var body = {
+      ecid: ecid,
+      status: 'active',
+      expires_at: expires,
+      remaining: remaining,
+      note: note
+    };
+
+    var btn = $('#createSubmit');
+    btn.disabled = true;
+    btn.textContent = '生成中…';
+
+    api(API.create, { method: 'POST', body: body }).then(function (created) {
+      var row = (created && typeof created === 'object' && created.id != null) ? created : Object.assign({ id: Date.now() }, body);
+      state.items.unshift(row);
+      render();
+
+      $('#createForm').hidden = true;
+      $('#modalTitle').textContent = '创建成功';
+      $('#createdBox').hidden = false;
+      $('#createdMeta').innerHTML = 'ECID <span class="mono">' + esc(ecid) + '</span><br>' +
+        fmtDate(new Date(expires)) + ' 到期 · 剩余 ' + remaining + ' 次';
+      toast('License 已生成', 'ok');
+    }).catch(function (err) {
+      toast(err.message || '创建失败', 'bad');
+    }).then(function () {
+      btn.disabled = false;
+      btn.textContent = '生成 License';
+    });
+  }
+
+  /* ---------------- events ---------------- */
+  on($('#loginBtn'), 'click', login);
+  on($('#demoBtn'), 'click', startDemo);
+  on($('#passwordInput'), 'keydown', function (e) { if (e.key === 'Enter') login(); });
+  on($('#userIdInput'), 'keydown', function (e) { if (e.key === 'Enter') $('#passwordInput').focus(); });
+  on($('#baseInput'), 'keydown', function (e) { if (e.key === 'Enter') $('#userIdInput').focus(); });
+
+  on($('#refreshBtn'), 'click', load);
+  on($('#logoutBtn'), 'click', function () { logout(); });
+  on($('#settingsBtn'), 'click', function () {
+    state.jwt = '';
+    try { sessionStorage.removeItem(STORE.jwt); } catch (e) {}
+    showLogin(true);
+  });
+
+  on($('#createBtn'), 'click', openCreate);
+  on($('#modalClose'), 'click', closeModal);
+  on($('#doneBtn'), 'click', function () { closeModal(); load(); });
+  on($('#createForm'), 'submit', submitCreate);
+  on($('#modal'), 'click', function (e) { if (e.target === $('#modal')) closeModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('#modal').hidden) closeModal();
+  });
+
+  var searchTimer;
+  on($('#searchInput'), 'input', function (e) {
+    state.q = e.target.value;
+    state.page = 1;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(render, 120);
+  });
+  on($('#statusFilter'), 'change', function (e) {
+    state.filter = e.target.value;
+    state.page = 1;
+    render();
+  });
+
+  on($('#listBody'), 'click', function (e) {
+    var copyBtn = e.target.closest('[data-copy]');
+    if (copyBtn) { copyText(copyBtn.getAttribute('data-copy')); return; }
+    var actBtn = e.target.closest('[data-act]');
+    if (actBtn) handleAction(actBtn.getAttribute('data-act'), actBtn.getAttribute('data-id'));
+  });
+
+  on($('#pager'), 'click', function (e) {
+    var btn = e.target.closest('[data-page]');
+    if (!btn) return;
+    var pages = Math.max(1, Math.ceil(filtered().length / PAGE_SIZE));
+    if (btn.getAttribute('data-page') === 'prev' && state.page > 1) state.page--;
+    if (btn.getAttribute('data-page') === 'next' && state.page < pages) state.page++;
+    render();
+  });
+
+  /* ---------------- init ---------------- */
+  function init() {
+    // ?demo=1 for preview
+    if (/[?&]demo=1\b/.test(location.search)) {
+      $('#baseInput').value = DEFAULT_BASE;
+      startDemo();
+      return;
+    }
+
+    var base = '';
+    var userId = '';
+    var jwt = '';
+    try {
+      base = localStorage.getItem(STORE.base) || '';
+      userId = localStorage.getItem(STORE.userId) || '';
+      jwt = sessionStorage.getItem(STORE.jwt) || '';
+    } catch (e) {}
+
+    state.base = base || DEFAULT_BASE;
+    state.userId = userId;
+    $('#baseInput').value = state.base;
+    $('#userIdInput').value = userId;
+
+    if (jwt) {
+      state.jwt = jwt;
+      api(API.list).then(function (data) {
+        state.items = normalizeList(data).items;
+        showDash();
+      }).catch(function () {
+        state.jwt = '';
+        showLogin(true);
+      });
+    } else {
+      showLogin(true);
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
