@@ -330,6 +330,7 @@
             <th>ECID</th>
             <th>到期</th>
             <th>剩余次数</th>
+            <th>动作</th>
             <th>备注</th>
             <th>操作</th>
           </tr>
@@ -371,6 +372,14 @@
           <input id="remainingInput" type="number" min="1" max="9999" value="5" />
         </label>
       </div>
+
+      <label class="field">
+        <span>动作</span>
+        <select id="actionSelect" class="select">
+          <option value="activation_bypass">绕过 T2 激活锁</option>
+          <option value="usb_boot">启动 USB</option>
+        </select>
+      </label>
 
       <label class="field">
         <span>备注（可选）</span>
@@ -447,6 +456,29 @@
     if (!d) return null;
     return Math.ceil((d.getTime() - Date.now()) / 86400000);
   }
+  function actionOf(row) {
+    var a = row && row.action;
+    if (typeof a === 'string' && a.trim()) return a.trim();
+    // backward compatibility: old rows may have actions array/string
+    var old = row && row.actions;
+    if (Array.isArray(old) && old.length) return old[0];
+    if (typeof old === 'string' && old.trim()) {
+      try { var j = JSON.parse(old); if (Array.isArray(j) && j.length) return j[0]; } catch (e) {}
+      return old.split(',')[0].trim();
+    }
+    return 'activation_bypass';
+  }
+
+  function actionLabel(a) {
+    return a === 'usb_boot' ? '启动 USB' : '绕过激活锁';
+  }
+
+  function actionHTML(row) {
+    var a = actionOf(row);
+    return '<span class="badge ' + (a === 'usb_boot' ? 'warn' : 'ok') + '">' +
+      actionLabel(a) + '</span>';
+  }
+
   function remainingOf(row) {
     if (row.remaining != null) return Math.max(0, Number(row.remaining) || 0);
     var max = Number(row.max_activations || 0);
@@ -701,11 +733,13 @@
         '</div></td>' +
       '<td data-label="到期">' + expiry + '</td>' +
       '<td data-label="剩余次数">' + remain + ' <span class="muted">次</span></td>' +
+      '<td data-label="动作">' + actionHTML(r) + '</td>' +
       '<td data-label="备注"><div class="note" title="' + esc(r.note || '') + '">' + esc(r.note || '—') + '</div></td>' +
       '<td class="cell-actions" data-label="操作"><div class="rowactions">' +
         '<button class="btn small" data-act="count" data-id="' + esc(r.id) + '">次数</button>' +
         '<button class="btn small" data-act="extend" data-id="' + esc(r.id) + '">延期</button>' +
         '<button class="btn small" data-act="toggle" data-id="' + esc(r.id) + '">' + (disabled ? '启用' : '禁用') + '</button>' +
+        '<button class="btn small" data-act="action" data-id="' + esc(r.id) + '">动作</button>' +
         '<button class="btn small" data-act="note" data-id="' + esc(r.id) + '">备注</button>' +
         '<button class="btn small danger" data-act="delete" data-id="' + esc(r.id) + '">删除</button>' +
       '</div></td>' +
@@ -786,6 +820,18 @@
       return;
     }
 
+    if (act === 'action') {
+      var cur = actionOf(row);
+      var input = prompt('选择动作：\n1 = 绕过 T2 激活锁\n2 = 启动 USB', cur === 'usb_boot' ? '2' : '1');
+      if (input == null) return;
+      var v = String(input).trim().toLowerCase();
+      var nextAction = (v === '2' || v === 'usb' || v === 'usb_boot') ? 'usb_boot' : 'activation_bypass';
+      patchRow(id, { action: nextAction }).then(function () {
+        toast('动作已改为：' + actionLabel(nextAction), 'ok');
+      }).catch(function (e) { toast(e.message, 'bad'); });
+      return;
+    }
+
     if (act === 'note') {
       var note = prompt('备注', row.note || '');
       if (note == null) return;
@@ -813,6 +859,7 @@
     $('#daysInput').value = '1';
     $('#remainingInput').value = '5';
     $('#noteInput').value = '';
+    $('#actionSelect').value = 'activation_bypass';
     $('#modal').hidden = false;
     setTimeout(function () { $('#ecidInput').focus(); }, 30);
   }
@@ -828,6 +875,8 @@
     var days = parseInt($('#daysInput').value, 10);
     var remaining = parseInt($('#remainingInput').value, 10);
     var note = $('#noteInput').value.trim();
+    var action = $('#actionSelect').value;
+    if (action !== 'activation_bypass' && action !== 'usb_boot') { toast('动作无效', 'bad'); return; }
 
     if (!/^[0-9A-Za-z_-]{4,64}$/.test(ecid)) {
       toast('ECID 只能包含字母、数字、下划线、短横线（4–64 位）', 'bad');
@@ -842,7 +891,8 @@
       status: 'active',
       expires_at: expires,
       remaining: remaining,
-      note: note
+      note: note,
+      action: action
     };
 
     var btn = $('#createSubmit');
@@ -858,7 +908,7 @@
       $('#modalTitle').textContent = '创建成功';
       $('#createdBox').hidden = false;
       $('#createdMeta').innerHTML = 'ECID <span class="mono">' + esc(ecid) + '</span><br>' +
-        fmtDate(new Date(expires)) + ' 到期 · 剩余 ' + remaining + ' 次';
+        fmtDate(new Date(expires)) + ' 到期 · 剩余 ' + remaining + ' 次<br>动作：' + actionLabel(action);
       toast('License 已生成', 'ok');
     }).catch(function (err) {
       toast(err.message || '创建失败', 'bad');
